@@ -7,6 +7,7 @@ from time import sleep
 import functools
 import operator
 import collections
+from tqdm import tqdm
 
 class BitmexTradingHistoryFetcher:
     
@@ -72,12 +73,10 @@ class BitmexTradingHistoryFetcher:
     def _fetch_raw_responses(self, date_list: list) -> list:
         client = bitmex.bitmex(test=False, api_key=self.api_key, api_secret=self.api_secret)
         raw_response_list: list = list()
-        for timestamp in date_list:
+        for timestamp in tqdm(date_list):
             response = self._get_data_via_api_call(client, timestamp)
             raw_response_list.append(response)
         return raw_response_list
-
-    # def _create_realised_dollar(self, flattened_json_item) -> json:
 
     def _sort_for_timestamp(self, json_item):
         return json_item['timestamp']
@@ -109,7 +108,6 @@ class BitmexTradingHistoryFetcher:
     def _get_data_via_api_call(self, client, timestamp) -> json:
         try:
             sleep(1)
-            print("Getting data for {0}".format(timestamp))
             response = client.User.User_getExecutionHistory(symbol="XBTUSD", timestamp = timestamp).result()
         except Exception as e:
             try:
@@ -120,7 +118,6 @@ class BitmexTradingHistoryFetcher:
                 final_json = json.loads(final_response3)  
                 return final_json
             except Exception as e2:
-                print("No data for date: {0}".format(timestamp))
                 return None
 
     def _get_date_ranges(self, year_to_fetch: int, month_to_fetch: int = None) -> list:
