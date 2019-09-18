@@ -7,6 +7,27 @@ import os
 import argparse
 import sys
 
+def start_main(path_to_api_keys: str, year_to_fetch: int, month_to_fetch: int, tax_rate: float, tax_limit: float):
+    key_loader = APIKeyLoader(path_to_api_keys)
+    bitmex_keys: dict = key_loader.get_keys()
+
+    for dict_key, dict_value in bitmex_keys.items():
+        for key, secret in dict_value.items():
+            fetcher = BitmexTradingHistoryFetcher(key, secret)
+            data_writer = DataWriter()
+            position_data, funding_data = fetcher.fetch_data_for_period(year_to_fetch, month_to_fetch)
+            column_names = fetcher.get_response_keys() + fetcher.get_new_data_columns()
+
+            data_calculator = DataCalculator()
+            position_data_df = data_calculator.transform_json_list_to_dataframe(column_names, position_data)
+            funding_data_df = data_calculator.transform_json_list_to_dataframe(column_names, funding_data)
+
+            final_data_frame = data_calculator.calculate_taxes(position_data_df, funding_data_df, 'realised_profit_or_loss_in_usd', tax_rate, tax_limit)
+
+            data_writer.write_final_data_frame(final_data_frame, year_to_fetch, month_to_fetch)
+            data_writer.write_funding_data(column_names, funding_data, year_to_fetch, month_to_fetch)
+            data_writer.write_position_data(column_names, position_data, year_to_fetch, month_to_fetch)
+
 api_keys_path: str = os.path.abspath(os.path.join(os.path.dirname( __file__ ), 'resources', 'api_keys.json'))
 
 parser = argparse.ArgumentParser()
@@ -33,24 +54,3 @@ else:
         sys.exit("You rejected your input or typed a not allowed character!\nPlease try again")
     else:
         start_main(args.keys, args.year, args.month, args.tax_rate, args.tax_limit)
-
-def start_main(path_to_api_keys: str, year_to_fetch: int, month_to_fetch: int, tax_rate: float, tax_limit: float):
-    key_loader = APIKeyLoader(path_to_api_keys)
-    bitmex_keys: dict = key_loader.get_keys()
-
-    for dict_key, dict_value in bitmex_keys.items():
-        for key, secret in dict_value.items():
-            fetcher = BitmexTradingHistoryFetcher(key, secret)
-            data_writer = DataWriter()
-            position_data, funding_data = fetcher.fetch_data_for_period(year_to_fetch, month_to_fetch)
-            column_names = fetcher.get_response_keys() + fetcher.get_new_data_columns()
-
-            data_calculator = DataCalculator()
-            position_data_df = data_calculator.transform_json_list_to_dataframe(column_names, position_data)
-            funding_data_df = data_calculator.transform_json_list_to_dataframe(column_names, funding_data)
-
-            final_data_frame = data_calculator.calculate_taxes(position_data_df, funding_data_df, 'realised_profit_or_loss_in_usd', tax_rate, tax_limit)
-
-            data_writer.write_final_data_frame(final_data_frame, year_to_fetch, month_to_fetch)
-            data_writer.write_funding_data(column_names, funding_data, year_to_fetch, month_to_fetch)
-            data_writer.write_position_data(column_names, position_data, year_to_fetch, month_to_fetch)
