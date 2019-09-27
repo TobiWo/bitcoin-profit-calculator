@@ -8,6 +8,7 @@ import functools
 import operator
 import collections
 from tqdm import tqdm
+import os
 
 class BitmexTradingHistoryFetcher:
     
@@ -24,9 +25,13 @@ class BitmexTradingHistoryFetcher:
         date_list: list = self._get_date_ranges(year_to_fetch, month_to_fetch)
         raw_response_list = self._fetch_raw_responses(date_list)
         none_filtered_falttened_response_list = self._filter_for_none_and_flatten_response_list(raw_response_list)
-        final_raw_position_list, final_raw_funding_list = self._get_final_raw_funding_and_position_list(none_filtered_falttened_response_list)
-        final_position_list, final_funding_list = self._get_final_modified_response_lists(final_raw_position_list, final_raw_funding_list)
-        return final_position_list, final_funding_list
+        key_file_path: str = os.path.abspath(os.path.join(os.path.dirname( __file__ ), 'out', 'raw_out'))
+        with open(key_file_path, 'w') as filehandle:
+            for item in none_filtered_falttened_response_list:
+                filehandle.write('%s\n' % item)
+        # final_raw_position_list, final_raw_funding_list = self._get_final_raw_funding_and_position_list(none_filtered_falttened_response_list)
+        # final_position_list, final_funding_list = self._get_final_modified_response_lists(final_raw_position_list, final_raw_funding_list)
+        # return final_position_list, final_funding_list
 
     def _get_final_modified_response_lists(self, final_raw_position_list: list, final_raw_funding_list: list) -> list:
         final_position_list = [ self._create_final_json_item(json_item) for json_item in final_raw_position_list ]
