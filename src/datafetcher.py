@@ -25,7 +25,8 @@ class BitmexTradingHistoryFetcher:
         date_list: list = self._get_date_ranges(year_to_fetch, month_to_fetch)
         raw_response_list = self._fetch_raw_responses(date_list)
         none_filtered_falttened_response_list = self._filter_for_none_and_flatten_response_list(raw_response_list)
-        key_file_path: str = os.path.abspath(os.path.join(os.path.dirname( __file__ ), 'out', 'raw_out'))
+        none_filtered_falttened_response_list.sort(key=self._get_datetime_from_json)
+        key_file_path: str = os.path.abspath(os.path.join(os.path.dirname( __file__ ), "..", 'out', 'raw_out3'))
         with open(key_file_path, 'w') as filehandle:
             for item in none_filtered_falttened_response_list:
                 filehandle.write('%s\n' % item)
@@ -139,3 +140,9 @@ class BitmexTradingHistoryFetcher:
 
     def get_new_data_columns(self) -> list:
         return self.new_data_columns
+    
+    def _get_datetime_from_json(self, json):
+        try:
+            return datetime.strptime(json['timestamp'], "%Y-%m-%dT%H:%M:%S.%fZ")
+        except KeyError:
+            return 0
