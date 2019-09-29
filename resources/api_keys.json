@@ -1,0 +1,10 @@
+{
+    "bitmex": {
+        "key_pairs": [
+            {   
+                "key": "abc123",
+                "secret": "defr5678x"
+            }
+        ] 
+    }
+}
