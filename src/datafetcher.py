@@ -8,7 +8,7 @@ import functools
 import operator
 import collections
 from tqdm import tqdm
-import os
+
 
 class BitmexTradingHistoryFetcher:
     
@@ -23,66 +23,115 @@ class BitmexTradingHistoryFetcher:
 
     def fetch_data_for_period(self, year_to_fetch: int, month_to_fetch: int = None):
         date_list: list = self._get_date_ranges(year_to_fetch, month_to_fetch)
-        raw_response_list = self._fetch_raw_responses(date_list)
-        none_filtered_falttened_response_list = self._filter_for_none_and_flatten_response_list(raw_response_list)
-        none_filtered_falttened_response_list.sort(key=self._get_datetime_from_json)
-        key_file_path: str = os.path.abspath(os.path.join(os.path.dirname( __file__ ), "..", 'out', 'raw_out3'))
-        with open(key_file_path, 'w') as filehandle:
-            for item in none_filtered_falttened_response_list:
-                filehandle.write('%s\n' % item)
-        # final_raw_position_list, final_raw_funding_list = self._get_final_raw_funding_and_position_list(none_filtered_falttened_response_list)
-        # final_position_list, final_funding_list = self._get_final_modified_response_lists(final_raw_position_list, final_raw_funding_list)
-        # return final_position_list, final_funding_list
+        raw_responses = self._fetch_raw_responses(date_list)
+        none_filtered_flattened_responses = self._filter_for_none_and_flatten_response_list(raw_responses)
+        none_filtered_flattened_responses.sort(key=self._get_datetime_from_json)
+        filtered_raw_data = self._get_filtered_raw_data(none_filtered_flattened_responses)
+        filtered_trades = self._get_trade_chunks(filtered_raw_data)
+        cleaned_filtered_trades = self._clean_chunks(filtered_trades)
+        final_raw_data_merged = [ item for list_item in cleaned_filtered_trades for item in list_item ]
+        final_raw_positions, final_raw_fundings = self._get_final_raw_data(final_raw_data_merged)
+        final_positions, final_fundings = self._get_final_modified_responses(final_raw_positions, final_raw_fundings)
+        return final_positions, final_fundings
 
-    def _get_final_modified_response_lists(self, final_raw_position_list: list, final_raw_funding_list: list) -> list:
-        final_position_list = [ self._create_final_json_item(json_item) for json_item in final_raw_position_list ]
-        final_funding_list = [ self._create_final_json_item(json_item) for json_item in final_raw_funding_list ]
-        return final_position_list, final_funding_list
+    def get_response_keys(self) -> list:
+        return self.response_keys
+
+    def get_new_data_columns(self) -> list:
+        return self.new_data_columns
+
+    def _get_final_modified_responses(self, final_raw_positions: list, final_raw_fundings: list) -> list:
+        final_positions = [ self._create_final_json_item(json_item) for json_item in final_raw_positions ]
+        final_fundings = [ self._create_final_json_item(json_item) for json_item in final_raw_fundings ]
+        return final_positions, final_fundings
 
     def _create_final_json_item(self, json_item) -> str:
         json_item[self.new_data_columns[0]] = self._transform_from_satoshi_to_btc(json_item['realisedPnl'])
         json_item[self.new_data_columns[1]] = round(json_item[self.new_data_columns[0]] * json_item['price'], 2)
         return json_item
 
-    def _get_final_raw_funding_and_position_list(self, flattened_response_list: list) -> list:
-        final_raw_position_dict, final_raw_funding_list = self._set_final_position_and_funding_items(flattened_response_list)
-        final_raw_position_list = list(final_raw_position_dict.values())
-        final_raw_position_list.sort(key = self._sort_for_timestamp)
-        return final_raw_position_list, final_raw_funding_list
+    def _get_final_raw_data(self, final_raw_data: list) -> (list, list):
+        final_raw_positions = list()
+        final_raw_fundings = list()
+        for item in final_raw_data: 
+            current_order_id = item['orderID']
+            if current_order_id == self.funding_order_id and self.funding_string == item['text']:
+                final_raw_fundings.append(item)
+                continue
+            else:
+                final_raw_positions.append(item)
+        return final_raw_positions, final_raw_fundings
 
-    def _set_final_position_and_funding_items(self, flattened_response_list: list) -> list:
-        final_raw_position_dict = dict()
-        final_raw_funding_list = list()
+    def _clean_chunks(self, trades: list) -> list:
+        new_trades = list()
+        for trade in trades:
+            close_position: datetime = self._get_datetime_from_json(trade[-1])
+            deletions = list()
+            for item in trade:
+                item_date: datetime = self._get_datetime_from_json(item)
+                if (item_date.date() == close_position.date() and item['avgEntryPrice'] != 'None'):
+                    deletions.append(item)
+            cleaned_trade = [item for item in trade if item not in deletions]
+            new_trades.append(cleaned_trade)
+        return new_trades
+
+
+    def _get_trade_chunks(self, final_raw_data: list) -> list:
+        all_trades = list()
+        chunk = list()
+        first_item: str = final_raw_data[0]
+        for item in final_raw_data:
+            if (item is first_item):
+                chunk.append(item)
+                continue
+            if (item['avgEntryPrice'] == 'None'):
+                chunk.append(item)
+                all_trades.append(chunk)
+                chunk = list()
+            else:
+                chunk.append(item)
+        return all_trades
+
+    def _get_filtered_raw_data(self, flattened_responses: list) -> list:
+        filtered_raw_positions, filtered_raw_fundings = self._set_position_and_funding_items(flattened_responses)
+        filtered_raw_positions = list(filtered_raw_positions.values())
+        filtered_raw_data = filtered_raw_positions + filtered_raw_fundings
+        filtered_raw_data.sort(key=self._get_datetime_from_json)
+        return filtered_raw_data
+
+    def _set_position_and_funding_items(self, flattened_response_list: list) -> (dict, list):
+        filtered_raw_position_dict = dict()
+        filtered_raw_funding_list = list()
         for item in flattened_response_list: 
             current_order_id = item['orderID']
             if current_order_id == self.funding_order_id and self.funding_string == item['text']:
-                final_raw_funding_list.append(item)
+                filtered_raw_funding_list.append(item)
                 continue
             else:
-                self._set_correct_final_raw_position_item(current_order_id, final_raw_position_dict, item)
-        return final_raw_position_dict, final_raw_funding_list
+                self._set_correct_final_raw_position_item(current_order_id, filtered_raw_position_dict, item)
+        return filtered_raw_position_dict, filtered_raw_funding_list
 
-    def _set_correct_final_raw_position_item(self, current_order_id: str, final_raw_position_dict: dict, loop_item: str):
-        if (current_order_id in final_raw_position_dict):
-            currently_stored_item = final_raw_position_dict[current_order_id] 
+    def _set_correct_final_raw_position_item(self, current_order_id: str, filtered_raw_position_dict: dict, loop_item: str):
+        if (current_order_id in filtered_raw_position_dict):
+            currently_stored_item = filtered_raw_position_dict[current_order_id] 
             if (loop_item['realisedPnl'] < 0 and (currently_stored_item['realisedPnl'] > loop_item['realisedPnl'])):
-                final_raw_position_dict[current_order_id] = loop_item
+                filtered_raw_position_dict[current_order_id] = loop_item
             elif (loop_item['realisedPnl'] > 0 and (currently_stored_item['realisedPnl'] < loop_item['realisedPnl'])):
-                final_raw_position_dict[current_order_id] = loop_item
+                filtered_raw_position_dict[current_order_id] = loop_item
         else:
-            final_raw_position_dict[current_order_id] = loop_item
+            filtered_raw_position_dict[current_order_id] = loop_item
 
-    def _filter_for_none_and_flatten_response_list(self, raw_response_list: list) -> list:
-        none_filtered_flattened_response_list = [ self._create_flattened_json(json_item) for raw_item in raw_response_list if raw_item is not None for json_item in raw_item ]
-        return none_filtered_flattened_response_list
+    def _filter_for_none_and_flatten_response_list(self, raw_responses: list) -> list:
+        none_filtered_flattened_responses = [ self._create_flattened_json(json_item) for raw_item in raw_responses if raw_item is not None for json_item in raw_item ]
+        return none_filtered_flattened_responses
        
     def _fetch_raw_responses(self, date_list: list) -> list:
         client = bitmex.bitmex(test=False, api_key=self.api_key, api_secret=self.api_secret)
-        raw_response_list: list = list()
+        raw_responses: list = list()
         for timestamp in tqdm(date_list):
             response = self._get_data_via_api_call(client, timestamp)
-            raw_response_list.append(response)
-        return raw_response_list
+            raw_responses.append(response)
+        return raw_responses
 
     def _sort_for_timestamp(self, json_item):
         return json_item['timestamp']
@@ -134,12 +183,6 @@ class BitmexTradingHistoryFetcher:
         else:
             date_list = [ datetime(year_to_fetch, month_number, day, 12, 0, 0, 0) for month_number in range(1, 13) for day in range(1, monthrange(year_to_fetch, month_number)[1]+1) ]
         return date_list
-
-    def get_response_keys(self) -> list:
-        return self.response_keys
-
-    def get_new_data_columns(self) -> list:
-        return self.new_data_columns
     
     def _get_datetime_from_json(self, json):
         try:
