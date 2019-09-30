@@ -1,6 +1,8 @@
 import bitmex
 import json
 from datetime import datetime
+from datetime import time
+from datetime import timedelta
 import re
 from calendar import monthrange
 from time import sleep
@@ -25,11 +27,10 @@ class BitmexTradingHistoryFetcher:
         date_list: list = self._get_date_ranges(year_to_fetch, month_to_fetch)
         raw_responses = self._fetch_raw_responses(date_list)
         none_filtered_flattened_responses = self._filter_for_none_and_flatten_response_list(raw_responses)
-        none_filtered_flattened_responses.sort(key=self._get_datetime_from_json)
         filtered_raw_data = self._get_filtered_raw_data(none_filtered_flattened_responses)
         filtered_trades = self._get_trade_chunks(filtered_raw_data)
-        cleaned_filtered_trades = self._clean_chunks(filtered_trades)
-        final_raw_data_merged = [ item for list_item in cleaned_filtered_trades for item in list_item ]
+        self._recalculate_realized_pnl_for_single_trades(filtered_trades)
+        final_raw_data_merged = [ item for list_item in filtered_trades for item in list_item ]
         final_raw_positions, final_raw_fundings = self._get_final_raw_data(final_raw_data_merged)
         final_positions, final_fundings = self._get_final_modified_responses(final_raw_positions, final_raw_fundings)
         return final_positions, final_fundings
@@ -62,35 +63,61 @@ class BitmexTradingHistoryFetcher:
                 final_raw_positions.append(item)
         return final_raw_positions, final_raw_fundings
 
-    def _clean_chunks(self, trades: list) -> list:
-        new_trades = list()
-        for trade in trades:
-            close_position: datetime = self._get_datetime_from_json(trade[-1])
-            deletions = list()
-            for item in trade:
-                item_date: datetime = self._get_datetime_from_json(item)
-                if (item_date.date() == close_position.date() and item['avgEntryPrice'] != 'None'):
-                    deletions.append(item)
-            cleaned_trade = [item for item in trade if item not in deletions]
-            new_trades.append(cleaned_trade)
-        return new_trades
-
+    def _recalculate_realized_pnl_for_single_trades(self, trades: list):
+        for trade_chunk in trades:
+            if (len(trade_chunk) == 1):
+                continue
+            new_realized_pnls = list()
+            for index, trade in enumerate(trade_chunk):
+                if ( (len(trade_chunk) - 1) == index):
+                    break
+                realisedPnl_trade1 = int(trade['realisedPnl'])
+                realisedPnl_trade2 = int(trade_chunk[index+1]['realisedPnl'])
+                difference = abs(realisedPnl_trade1-realisedPnl_trade2)
+                if (realisedPnl_trade2 < 0):
+                    new_realized_pnls.append(-difference)
+                else:
+                    new_realized_pnls.append(difference)
+            for index, trade in enumerate(trade_chunk):
+                if (trade == trade_chunk[0]):
+                    continue
+                else:
+                    trade['realisedPnl'] = new_realized_pnls[index-1]
 
     def _get_trade_chunks(self, final_raw_data: list) -> list:
         all_trades = list()
         chunk = list()
-        first_item: str = final_raw_data[0]
-        for item in final_raw_data:
-            if (item is first_item):
+        for index, item in enumerate(final_raw_data):
+            if (len(chunk) == 0):
+                item_datetime = self._get_datetime_from_json(item)
+                lower_datetime_border, upper_datetime_border = self._get_upper_and_lower_datetime_border(item_datetime)
+            elif (len(chunk) == 1 and final_raw_data[index-1] == chunk[0]):
+                item_datetime = self._get_datetime_from_json(final_raw_data[index-1])
+                lower_datetime_border, upper_datetime_border = self._get_upper_and_lower_datetime_border(item_datetime)
+            current_item_datetime = self._get_datetime_from_json(item)
+            if (current_item_datetime > lower_datetime_border and current_item_datetime < upper_datetime_border):
                 chunk.append(item)
-                continue
-            if (item['avgEntryPrice'] == 'None'):
-                chunk.append(item)
+                if (item == final_raw_data[-1]):
+                    all_trades.append(chunk)
+            else:
                 all_trades.append(chunk)
                 chunk = list()
-            else:
                 chunk.append(item)
         return all_trades
+
+    def _get_upper_and_lower_datetime_border(self, item_datetime: datetime) -> (datetime, datetime):
+        trade_border_time = time(12,0,0,0)
+        if (item_datetime.time() > trade_border_time):
+            upper_datetime_border = item_datetime + timedelta(days=1)
+            upper_datetime_border = upper_datetime_border.replace(hour=12, minute=0, second=0, microsecond=0)
+            lower_datetime_border = item_datetime
+            lower_datetime_border = lower_datetime_border.replace(hour=12, minute=0, second=0, microsecond=0)
+        else:
+            lower_datetime_border = item_datetime - timedelta(days=1)
+            lower_datetime_border = lower_datetime_border.replace(hour=12, minute=0, second=0, microsecond=0)
+            upper_datetime_border = item_datetime
+            upper_datetime_border = upper_datetime_border.replace(hour=12, minute=0, second=0, microsecond=0)
+        return lower_datetime_border, upper_datetime_border
 
     def _get_filtered_raw_data(self, flattened_responses: list) -> list:
         filtered_raw_positions, filtered_raw_fundings = self._set_position_and_funding_items(flattened_responses)
@@ -111,6 +138,7 @@ class BitmexTradingHistoryFetcher:
                 self._set_correct_final_raw_position_item(current_order_id, filtered_raw_position_dict, item)
         return filtered_raw_position_dict, filtered_raw_funding_list
 
+    # please check if/elif logic --> is it necessary?
     def _set_correct_final_raw_position_item(self, current_order_id: str, filtered_raw_position_dict: dict, loop_item: str):
         if (current_order_id in filtered_raw_position_dict):
             currently_stored_item = filtered_raw_position_dict[current_order_id] 
@@ -123,6 +151,7 @@ class BitmexTradingHistoryFetcher:
 
     def _filter_for_none_and_flatten_response_list(self, raw_responses: list) -> list:
         none_filtered_flattened_responses = [ self._create_flattened_json(json_item) for raw_item in raw_responses if raw_item is not None for json_item in raw_item ]
+        none_filtered_flattened_responses.sort(key=self._get_datetime_from_json)
         return none_filtered_flattened_responses
        
     def _fetch_raw_responses(self, date_list: list) -> list:
@@ -162,7 +191,7 @@ class BitmexTradingHistoryFetcher:
 
     def _get_data_via_api_call(self, client, timestamp) -> json:
         try:
-            sleep(1)
+            # sleep(1)
             response = client.User.User_getExecutionHistory(symbol="XBTUSD", timestamp = timestamp).result()
         except Exception as e:
             try:
