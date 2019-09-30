@@ -191,7 +191,7 @@ class BitmexTradingHistoryFetcher:
 
     def _get_data_via_api_call(self, client, timestamp) -> json:
         try:
-            # sleep(1)
+            sleep(1)
             response = client.User.User_getExecutionHistory(symbol="XBTUSD", timestamp = timestamp).result()
         except Exception as e:
             try:
