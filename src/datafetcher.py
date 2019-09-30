@@ -23,7 +23,8 @@ class BitmexTradingHistoryFetcher:
         self.api_key: str= api_key
         self.api_secret: str = api_secret
 
-    def fetch_data_for_period(self, year_to_fetch: int, month_to_fetch: int = None):
+    # check why last september funding came up 1000x?
+    def fetch_data_for_period(self, year_to_fetch: int, month_to_fetch: int = None) -> (list, list):
         date_list: list = self._get_date_ranges(year_to_fetch, month_to_fetch)
         raw_responses = self._fetch_raw_responses(date_list)
         none_filtered_flattened_responses = self._filter_for_none_and_flatten_response_list(raw_responses)
@@ -63,7 +64,7 @@ class BitmexTradingHistoryFetcher:
                 final_raw_positions.append(item)
         return final_raw_positions, final_raw_fundings
 
-    def _recalculate_realized_pnl_for_single_trades(self, trades: list):
+    def _recalculate_realized_pnl_for_single_trades(self, trades: list) -> list:
         for trade_chunk in trades:
             if (len(trade_chunk) == 1):
                 continue
@@ -74,15 +75,16 @@ class BitmexTradingHistoryFetcher:
                 realisedPnl_trade1 = int(trade['realisedPnl'])
                 realisedPnl_trade2 = int(trade_chunk[index+1]['realisedPnl'])
                 difference = abs(realisedPnl_trade1-realisedPnl_trade2)
-                if (realisedPnl_trade2 < 0):
-                    new_realized_pnls.append(-difference)
-                else:
+                if (realisedPnl_trade1 < realisedPnl_trade2):
                     new_realized_pnls.append(difference)
+                else:
+                    new_realized_pnls.append(-difference)
             for index, trade in enumerate(trade_chunk):
                 if (trade == trade_chunk[0]):
                     continue
                 else:
                     trade['realisedPnl'] = new_realized_pnls[index-1]
+        return trades
 
     def _get_trade_chunks(self, final_raw_data: list) -> list:
         all_trades = list()
