@@ -48,7 +48,7 @@ The application uses the APIs from the respective trading portals. For version 0
 
 * navigate to "API Key Management
 
-    ![Key Management](https://raw.githubusercontent.com/TobiWo/bitcoin-trading-profit-calculator/development/resources/api_generation/bitmex/management_2.PNG "Bitmex API")
+    ![Key Management](https://raw.githubusercontent.com/TobiWo/bitcoin-trading-profit-calculator/development/resources/api_generation/bitmex/management_2.png "Bitmex API")
 
 * find your IP-address using [this website](https://www.whatismyip.com/de/)
 * fill out the API-creation form and hit the "Create API Key"-button
