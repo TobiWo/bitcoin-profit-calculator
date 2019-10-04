@@ -11,6 +11,10 @@
     * [API keys](#api_keys)
         * [Bitmex Key](#bitmex_key)
 * [Usage](#usage)
+    * [Output](#output)
+    * [CLI flags](#cli_flags)
+* [Planned features](#planned_features)
+* [Donation](#donation)
     
 
 ## <a name="description"></a>Description
@@ -76,10 +80,12 @@ A sample call of the application would be:
 This will fetch the data for August 2019. The output-files are stored in the `out`-folder within the installation folder.
 
 ### <a name="output"></a>Output
-### <a name="cli-flags"></a>CLI flags
+### <a name="cli_flags"></a>CLI flags
+
+## <a name="planned_features"></a>Planned features
 
 ## <a name="donation"></a>Donation
-If you think this application is helpful in regards to your trading activity, I would appreciate every Satoshi or Wei or whatever you think is reasonable which will help to continue the work and implement new features.
+If you think this application is helpful in regards to your trading activity, I would appreciate every Satoshi or Wei or whatever you think is reasonable. This will help to continue the work and implement new features.
 
 You can support using Bitcoin or Ethereum.
 
