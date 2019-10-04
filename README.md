@@ -61,3 +61,34 @@ The application uses the APIs from the respective trading portals. For version 0
 * Copy&Paste the key-ID and the key-Secret to the above mentioned **api_keys.json**
 
 ## <a name="usage"></a>Usage
+Currently the application has no UI and therefore is based on a command line interface (cli). All command line flags are listed below.
+
+For usage test, navigate to the installation folder and type `python btc_trading_profit_calculator.py -h`
+
+This will print all available command line flags.
+
+The most important flags are `-y` and `-m` which will specify the year and the month for which you will retrieve your trading data. If you do not specify a month, the data will be retrieved for the whole year. However, specifying a year is mandatory. As mentioned above a complete list of flags and there description is listed below.
+
+A sample call of the application would be:
+
+`python btc_trading_profit_calculator.py -y 2019 -m 8`
+
+This will fetch the data for August 2019. The output-files are stored in the `out`-folder within the installation folder.
+
+### <a name="output"></a>Output
+### <a name="cli-flags"></a>CLI flags
+
+## <a name="donation"></a>Donation
+If you think this application is helpful in regards to your trading activity, I would appreciate every Satoshi or Wei or whatever you think is reasonable which will help to continue the work and implement new features.
+
+You can support using Bitcoin or Ethereum.
+
+Bitcoin:
+
+`197GMuw8KQcD7QS7g2d6NhUKHd91TNUnuq`
+
+Ethereum:
+
+`0x5a7F786815C03b45DC4341baE97fD4D9D6E70320`
+
+**Thank you very much!**
