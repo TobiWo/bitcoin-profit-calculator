@@ -7,6 +7,10 @@
     * [Python](#python)
     * [BTPC](#btpc)
     * [Dependencies](#dependencies)
+* [Preparation](#preparation)
+    * [API keys](#api_keys)
+        * [Bitmex Key](#bitmex_key)
+* [Usage](#usage)
     
 
 ## <a name="description"></a>Description
@@ -56,4 +60,4 @@ The application uses the APIs from the respective trading portals. For version 0
     * **NOTE**: Your IP can change over time. Therefore it will be necessary to re-create the API-key from time to time.
 * Copy&Paste the key-ID and the key-Secret to the above mentioned **api_keys.json**
 
-
+## <a name="usage"></a>Usage
