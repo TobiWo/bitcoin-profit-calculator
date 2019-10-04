@@ -5,6 +5,14 @@ class DataWriter:
 
     def __init__(self):
         self.output_path: str = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'out'))
+        self._create_out_dir()
+
+    def _create_out_dir(self):
+        try:
+            if not(os.path.exists(self.output_path)):
+                os.mkdir(self.output_path)
+        except OSError:
+            print ("Creation of the directory {0} failed".format(self.output_path))
 
     def write_position_data(self, column_names: list, final_position_list: list, year_to_fetch: int, month_to_fetch: int = None):
         try:
