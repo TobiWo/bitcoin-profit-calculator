@@ -2,6 +2,7 @@
 ## Table of Content
 * [Description](#description)
     * [NOTE on application speed (Bitmex)](#speed_note)
+    * [Supported platforms and trade-pairs](#platforms)
 * [Version](#version)
 * [Requirements](#requirements)
 * [Installation](#installation)
@@ -25,6 +26,13 @@ This application calculates profit, loss and taxes from leverage trading with bi
 
 ### <a name="speed_note"></a>NOTE on application speed (Bitmex)
 Because of the request limits set by Bitmex there is an artificial delay during the fetching process. Therefore after every request there is a one second pause. Due to the API nature of Bitmex the application needs to fetch data for every single day separately. In combination with the delay this leads to the fact, that a run to fetch data for a complete year, will take approx. 6 minutes, while fetching data for a month will take approx. 30 seconds.
+
+### <a name="platforms"></a>Supported platforms and trade-pairs
+| platform | trade-pair | contract type |
+| --- | --- | --- |
+| Bitmex | XBTUSD | Perpetual Contract |
+
+If you trade with different contracts, the results you receive could be wrong. Due to the fact that I only trade with the above listed contract type I only have example data for this available and therefore can only handle the respective data.
 
 ## <a name="version"></a>Version
 Current version: **0.1**
@@ -119,6 +127,7 @@ In dependence whether you only put in an BTPC output from a month or a year the 
 * add UI
 * add bybit support
 * combine multiple bybit accounts
+* add further trade-pairs like ETHUSD etc.
 * set month-range for getting data for specified (multiple) months
 * logger
 
