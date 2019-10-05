@@ -13,6 +13,8 @@
 * [Usage](#usage)
     * [Output](#output)
     * [CLI flags](#cli_flags)
+* [Verification](#verification)
+    * [Bitmex](#bitmex_verify)
 * [Planned features](#planned_features)
 * [Donation](#donation)
     
@@ -80,9 +82,41 @@ A sample call of the application would be:
 This will fetch the data for August 2019. The output-files are stored in the `out`-folder within the installation folder.
 
 ### <a name="output"></a>Output
+The output of the application is splitted to two files. One contains all the fundings for the specified period, the other one contains all the actual trading data (opening and closing positions for market price, limit order etc.). Currently I'm not 100% sure if this is more confusing then it helps. Therefore I will probably change this to only one output file.
+
+The columns in the files are self-explanatory. The last three columns represent the enriched data which were added or modified by the application. While adding more platforms this may change over time. 
+
 ### <a name="cli_flags"></a>CLI flags
+| Flag (short) | Flag (long) | Mandatory | Description |
+| - | - | - | - |
+| -k | --keys | False | Specifies the path to your api-keys. Default path is <project_dir>/resources/api_keys.json |
+| -y | --year | True | Fetch data for the defined year |
+| -m | --month | False | Fetch data for the defined month |
+| -t | --tax_rate | False | Tax rate specified as fraction of one: 0.x Taxe rate is applied to the total profit. |
+| -l | --tax_limit | False | In some countries there is maybe kind of a free profit limit where no taxes need to be payed for. This flags defines the limit. However, if the limit/threshold is reached taxes are calculated for the whole profit. If this is not the correct way I highly recommend not to rely on tax-calculation of the application but rather do your own calcualtion based on the returned profit/loss output |
+
+## <a name="verification"></a>Verification
+Verification refers to the fact, that the APIs of the different platforms return your trades in a very unusual, kind of unreadable way. At least this is true for Bitmex (Bybit wasn't tested yet). Therefore some data wrangling is happening in the background, to export the data in the most readable way. To be 100% sure that nothing unexpected happened during modification, I provide verification scripts which you can use to verify the output of this application against the data you can download from the platforms. The verifiers can be found within the folder `verifier` of the applications installation folder.  
+
+### <a name="bitmex_verify">Bitmex (NOT IMPLEMENTED YET)
+Within the bitmex subfolder you can find another folder named `resources`. Please put in there the following files (do not rename the files):
+* the original csv-file from your Bitmex-account 
+* the positions-file from the BTPC output
+* the fundings-file from the BTPC output
+
+You can run the verification process with the command:
+* `python verify_bitmex.py`
+
+In dependence whether you only put in an BTPC output from a month or a year the verification is automatically done only for this month or year.
 
 ## <a name="planned_features"></a>Planned features
+* add verifier which verify the results of the BTPC against the bitmex-account.csv
+* combine multiple bitmex accounts    
+* add UI
+* add bybit support
+* combine multiple bybit accounts
+* set month-range for getting data for specified (multiple) months
+* logger
 
 ## <a name="donation"></a>Donation
 If you think this application is helpful in regards to your trading activity, I would appreciate every Satoshi or Wei or whatever you think is reasonable. This will help to continue the work and implement new features.
