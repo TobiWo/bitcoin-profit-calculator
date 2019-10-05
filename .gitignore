@@ -109,3 +109,4 @@ venv.bak/
 # personal stuff
 out/**
 resources/keys_*
+**.R
