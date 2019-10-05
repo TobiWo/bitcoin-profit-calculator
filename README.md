@@ -98,7 +98,7 @@ The columns in the files are self-explanatory. The last three columns represent 
 ## <a name="verification"></a>Verification
 Verification refers to the fact, that the APIs of the different platforms return your trades in a very unusual, kind of unreadable way. At least this is true for Bitmex (Bybit wasn't tested yet). Therefore some data wrangling is happening in the background, to export the data in the most readable way. To be 100% sure that nothing unexpected happened during modification, I provide verification scripts which you can use to verify the output of this application against the data you can download from the platforms. The verifiers can be found within the folder `verifier` of the applications installation folder.  
 
-### <a name="bitmex_verify">Bitmex (NOT IMPLEMENTED YET)
+### <a name="bitmex_verify">Bitmex (**UNDER DEVELOPMENT**)
 Within the bitmex subfolder you can find another folder named `resources`. Please put in there the following files (do not rename the files):
 * the original csv-file from your Bitmex-account 
 * the positions-file from the BTPC output
