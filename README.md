@@ -88,7 +88,7 @@ The columns in the files are self-explanatory. The last three columns represent 
 
 ### <a name="cli_flags"></a>CLI flags
 | Flag (short) | Flag (long) | Mandatory | Description |
-| - | - | - | - |
+| --- | -------- | --- | --- |
 | -k | --keys | False | Specifies the path to your api-keys. Default path is <project_dir>/resources/api_keys.json |
 | -y | --year | True | Fetch data for the defined year |
 | -m | --month | False | Fetch data for the defined month |
