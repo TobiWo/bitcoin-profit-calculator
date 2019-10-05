@@ -1,6 +1,7 @@
 # BTPC - Bitcoin Trading Profit Calculator
 ## Table of Content
 * [Description](#description)
+    * [NOTE on application speed (Bitmex)](#speed_note)
 * [Version](#version)
 * [Requirements](#requirements)
 * [Installation](#installation)
@@ -21,6 +22,9 @@
 
 ## <a name="description"></a>Description
 This application calculates profit, loss and taxes from leverage trading with bitcoin. Currently this is in an early phase of development and only supports Bitmex (and here only one account per run). However, multi-account support is already planned and will be integrated. Further major features will include the support for bybit and an ui. All currently planned feature are listed below in the respective section of this ReadMe. Suggestions from the community for further features are welcome.
+
+### <a name="speed_note"></a>NOTE on application speed (Bitmex)
+Because of the request limits set by Bitmex there is an artificial delay during the fetching process. Therefore after every request there is a one second pause. Due to the API nature of Bitmex the application needs to fetch data for every single day separately. In combination with the delay this leads to the fact, that a run to fetch data for a complete year, will take approx. 6 minutes, while fetching data for a month will take approx. 30 seconds.
 
 ## <a name="version"></a>Version
 Current version: **0.1**
