@@ -110,3 +110,4 @@ venv.bak/
 out/**
 resources/keys_*
 **.R
+verifier/*/resources/**
